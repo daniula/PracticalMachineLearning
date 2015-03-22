@@ -1,0 +1,97 @@
+---
+title: "Human Activity Recognition - Practical Machine Learning Project"
+author: "Daniel Mendalka"
+date: "March 21, 2015"
+output: html_document
+---
+
+```{r, echo=FALSE, message=FALSE}
+library(caret)
+library(randomForest)
+library(doParallel)
+```
+
+# Data
+The data used in this project: 
+
+* [training](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv)
+* [testing](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv)
+
+## Loading and cleaning
+
+```{r}
+na.strings <- c('NA', '', '#DIV/0!')
+training <- read.csv("pml-training.csv", na.strings=na.strings)
+# testing <- read.csv("pml-testing.csv", na.strings=na.strings)
+```
+
+Data contains `r dim(training)[1]` rows with `r dim(training)[2]` variables.
+
+From initial data we can remove columns containing:
+
+* data unreleated to performed excercies (`X`, `user_name`, `raw_timestamp_part1`, `raw_timestamp_part2`, `cvtd_timestamp`)
+* mostly NA values
+* only one unique value
+
+```{r}
+    predictors <- names(training)
+    
+    predictors <- predictors[colSums(is.na(training)) == 0]
+    
+    useless <- c('X', 'user_name', 'raw_timestamp_part1', 'raw_timestamp_part2', 'cvtd_timestamp')
+    predictors <- predictors[!predictors %in% useless]
+    
+    training <- subset(training, select=predictors)
+    training <- training[-nearZeroVar(training)]
+```
+
+List of predictors after cleaning data:
+```{r}
+names(training)
+```
+
+# Model
+
+```{r}
+```
+
+To train our model we can use random forest:
+
+```{r, echo=FALSE}
+if (file.exists('model.RData')) {
+    load('model.RData')
+} else {
+    cl <- makeCluster(detectCores())
+    registerDoParallel(cl)
+}
+```
+```{r}
+if (!"model" %in% ls()) {
+    
+    set.seed(1)
+    model <- train(classe ~ ., data=training, method="rf", preProcess="pca")    
+
+}
+```
+```{r, echo=FALSE}
+if (!file.exists('model.RData')) {
+    stopCluster(cl)
+    save(model, file='model.RData')
+}
+model
+```
+
+For this given model we can see very high accuracy error rate as low as 0.14%.
+
+To do cross validation with random forest we can use `rfcv` function:
+```{r, echo=FALSE}
+cl <- makeCluster(detectCores())
+registerDoParallel(cl)
+```
+```{r}
+rf.cv <- rfcv(subset(training, select=-classe) ,training$classe)
+with(rf.cv,  plot(n.var, error.cv, log="x", type="o", lwd=2))
+```
+```{r, echo=FALSE}
+stopCluster(cl)
+```

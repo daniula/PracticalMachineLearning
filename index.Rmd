@@ -22,7 +22,6 @@ The data used in this project:
 ```{r}
 na.strings <- c('NA', '', '#DIV/0!')
 training <- read.csv("pml-training.csv", na.strings=na.strings)
-# testing <- read.csv("pml-testing.csv", na.strings=na.strings)
 ```
 
 Data contains `r dim(training)[1]` rows with `r dim(training)[2]` variables.
@@ -34,15 +33,15 @@ From initial data we can remove columns containing:
 * only one unique value
 
 ```{r}
-    predictors <- names(training)
+predictors <- names(training)
     
-    predictors <- predictors[colSums(is.na(training)) == 0]
+predictors <- predictors[colSums(is.na(training)) == 0]
     
-    useless <- c('X', 'user_name', 'raw_timestamp_part1', 'raw_timestamp_part2', 'cvtd_timestamp')
-    predictors <- predictors[!predictors %in% useless]
+useless <- c('X', 'user_name', 'raw_timestamp_part1', 'raw_timestamp_part2', 'cvtd_timestamp')
+predictors <- predictors[!predictors %in% useless]
     
-    training <- subset(training, select=predictors)
-    training <- training[-nearZeroVar(training)]
+training <- subset(training, select=predictors)
+training <- training[-nearZeroVar(training)]
 ```
 
 List of predictors after cleaning data:
@@ -78,17 +77,17 @@ if (!file.exists('model.RData')) {
     stopCluster(cl)
     save(model, file='model.RData')
 }
-model
+confusionMatrix(predict(model, training), training$classe)
 ```
 
-For this given model we can see very high accuracy error rate as low as 0.14%.
+For this model we achieved 100% accuracy.
 
 To do cross validation with random forest we can use `rfcv` function:
 ```{r, echo=FALSE}
 cl <- makeCluster(detectCores())
 registerDoParallel(cl)
 ```
-```{r}
+```{r, eval=FALSE}
 rf.cv <- rfcv(subset(training, select=-classe) ,training$classe)
 with(rf.cv,  plot(n.var, error.cv, log="x", type="o", lwd=2))
 ```
